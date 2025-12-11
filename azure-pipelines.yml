@@ -1,7 +1,5 @@
 # Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# This pipeline builds and deploys a Classic Cloud Service.
 
 trigger:
 - main
@@ -15,17 +13,16 @@ steps:
     command: 'restore'
     restoreSolution: '**/*.sln'
     feedsToUse: 'select'
-    vstsFeed: '88db1bee-c1a6-414b-86b3-643c8fed5097'
+    # TODO 1: Update this to your correct private NuGet Feed ID
+    vstsFeed: '88db1bee-c1a6-414b-86b3-643c8fed5097' 
 
 # 2. Use MS build to output the cloud service project configuration and package to the temporary location of the local agent.
-
 - task: VSBuild@1
   inputs:
     solution: '**\*.sln'
     msbuildArgs: '/t:Publish /p:DeployOnBuild=true /p:AutomatedBuild=True /p:configuration=release /p:TargetProfile=Cloud /p:PublishDir="$(System.DefaultWorkingDirectory)/Debug/publish"'
 
 # 3. Copy the configuration and package files to the local path on the agent where any artifacts locate.
-
 - task: CopyFiles@2
   inputs:
     SourceFolder: 'Debug/publish'
@@ -33,7 +30,6 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 # 4. Copy the definition file to the local path on the agent where any artifacts locate.
-
 - task: CopyFiles@2
   inputs:
     Contents: '*.csdef'
@@ -43,17 +39,21 @@ steps:
 - task: AzureFileCopy@5
   inputs:
     SourcePath: '${env:BUILD.ARTIFACTSTAGINGDIRECTORY}/*'
-    azureSubscription: 'cloudsc'
+    # TODO 2: Update with the name of your Azure Service Connection (e.g., 'MyAzureServiceConnection')
+    azureSubscription: 'cloudsc' 
     Destination: 'AzureBlob'
+    # TODO 3: Define these as pipeline variables
     storage: '$(stg_account)'
     ContainerName: '$(stg_container)'
     BlobPrefix: '$(stg_prefix)'
     AdditionalArgumentsForBlobCopy: '--recursive'
+
 # Generate temp SAS token for 5 mins
-- task: AzurePowerShell@5                                                     # please make sure the Azure PowerShell contains the module of Az and AzureRm.
+- task: AzurePowerShell@5
   name: GenerateSasToken
   inputs:
-    azureSubscription: 'azureSubscription'
+    # TODO 4: Update with the name of your Azure Service Connection (same as above, e.g., 'MyAzureServiceConnection')
+    azureSubscription: 'azureSubscription' 
     ScriptType: 'InlineScript'
     Inline: |
       $account_name = ${env:STG_ACCOUNT}
@@ -62,19 +62,25 @@ steps:
       $sas = New-AzStorageAccountSASToken -Service Blob -ResourceType Service,Container,Object -Permission "rl" -ExpiryTime (Get-Date).AddMinutes(5) -Context $context
       $cspkg = ${env:URL_CSPKG} + $sas
       $cscfg = ${env:URL_CSCFG} + $sas
-      Write-Host ("##vso[task.setvariable variable=cspkg]$cspkg")             # output $cspkg in PowerShell to global variable cspkg
-      Write-Host ("##vso[task.setvariable variable=cscfg]$cscfg")             # output $cscfg in PowerShell to global variable cscfg
-    azurePowerShellVersion: 'LatestVersion'  
-- task: AzureResourceManagerTemplateDeployment@3                               
+      Write-Host ("##vso[task.setvariable variable=cspkg]$cspkg")
+      Write-Host ("##vso[task.setvariable variable=cscfg]$cscfg")
+    azurePowerShellVersion: 'LatestVersion'
+    
+- task: AzureResourceManagerTemplateDeployment@3
   inputs:
     deploymentScope: 'Resource Group'
-    azureResourceManagerConnection: 'azureSubscription'
-    subscriptionId: 'dba20533-24c8-4a20-87ad-3d79ac546216'
+    # TODO 5: Update with the name of your Azure Service Connection (same as above, e.g., 'MyAzureServiceConnection')
+    azureResourceManagerConnection: 'azureSubscription' 
+    # SUBSCRIPTION ID UPDATED
+    subscriptionId: '9756bfc1-7130-4993-b257-5cf5212d4b5f' 
     action: 'Create Or Update Resource Group'
+    # TODO 6: Update to your target Resource Group Name
     resourceGroupName: 'cloud-shell-storage-westeurope'
-    location: 'Australia Central'
+    # TODO 7: Update to your target Azure Region (e.g., 'eastus', 'westus2', etc.)
+    location: 'Australia Central' 
     templateLocation: 'Linked artifact'
     csmFile: 'ContosoCS.template.json'
     csmParametersFile: 'ContosoCS.parameter.json'
-    overrideParameters: '-packageSasUri $(cspkg) -configurationSasUri $(cscfg) -cloudServiceName cses4test002nellyktest -deploymentLabel deploy$(stg_prefix)'
+    # CLOUD SERVICE NAME UPDATED
+    overrideParameters: '-packageSasUri $(cspkg) -configurationSasUri $(cscfg) -cloudServiceName **mhecmg** -deploymentLabel deploy$(stg_prefix)'
     deploymentMode: 'Incremental'
