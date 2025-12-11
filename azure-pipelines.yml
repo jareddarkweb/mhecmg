@@ -40,7 +40,7 @@ steps:
   inputs:
     SourcePath: '${env:BUILD.ARTIFACTSTAGINGDIRECTORY}/*'
     # TODO 2: Update with the name of your Azure Service Connection (e.g., 'MyAzureServiceConnection')
-    azureSubscription: 'cloudsc' 
+    azureSubscription: 'Azureconnection' 
     Destination: 'AzureBlob'
     # TODO 3: Define these as pipeline variables
     storage: '$(stg_account)'
@@ -53,7 +53,7 @@ steps:
   name: GenerateSasToken
   inputs:
     # TODO 4: Update with the name of your Azure Service Connection (same as above, e.g., 'MyAzureServiceConnection')
-    azureSubscription: 'azureSubscription' 
+    azureSubscription: 'Azureconnection' 
     ScriptType: 'InlineScript'
     Inline: |
       $account_name = ${env:STG_ACCOUNT}
@@ -70,7 +70,7 @@ steps:
   inputs:
     deploymentScope: 'Resource Group'
     # TODO 5: Update with the name of your Azure Service Connection (same as above, e.g., 'MyAzureServiceConnection')
-    azureResourceManagerConnection: 'azureSubscription' 
+    azureResourceManagerConnection: 'Azureconnection' 
     # SUBSCRIPTION ID UPDATED
     subscriptionId: '9756bfc1-7130-4993-b257-5cf5212d4b5f' 
     action: 'Create Or Update Resource Group'
