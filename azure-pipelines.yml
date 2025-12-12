@@ -4,8 +4,7 @@
 trigger:
 - main
 
-pool:
-  vmImage: windows-latest
+
 
 steps:
 - task: NuGetCommand@2
@@ -84,3 +83,6 @@ steps:
     # CLOUD SERVICE NAME UPDATED
     overrideParameters: '-packageSasUri $(cspkg) -configurationSasUri $(cscfg) -cloudServiceName **mhecmg** -deploymentLabel deploy$(stg_prefix)'
     deploymentMode: 'Incremental'
+pool:
+  name: Default  # Your self-hosted pool name
+  # Remove or comment out: vmImage: 'windows-latest'pool:
